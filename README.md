@@ -70,9 +70,3 @@ npm install
 
 # Run local development server
 npm run dev
-Open http://localhost:3000 in your browser.
-
-
-Save the file (**Ctrl + S**) and close Notepad.
-
----
