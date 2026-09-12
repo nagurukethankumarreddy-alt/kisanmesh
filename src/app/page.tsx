@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Cpu, 
   Sparkles, 
@@ -31,7 +31,9 @@ import {
   Truck, 
   Scale, 
   Wifi, 
-  SendHorizontal 
+  SendHorizontal,
+  PhoneCall,
+  Receipt
 } from "lucide-react";
 
 interface AgentStep {
@@ -81,6 +83,11 @@ interface ArbitrageResult {
     contractedVehicle: string;
     returnLoadCargo: string;
     returnTripSubsidy: number;
+  };
+  regulatoryPass?: {
+    apmcExemptionPermit: string;
+    gstWaybillStatus: string;
+    tollGateBypassCode: string;
   };
   agentExecutionSteps: AgentStep[];
   toolExecutions?: any[];
@@ -140,17 +147,16 @@ const PAN_INDIA_LANGUAGES = [
 ];
 
 export default function Home() {
-  const [activePersona, setActivePersona] = useState<"FPO_OPERATOR" | "ORAL_FARMER">("FPO_OPERATOR");
+  const [activePersona, setActivePersona] = useState<"FPO_OPERATOR" | "ORAL_FARMER">("ORAL_FARMER");
   const [selectedLanguageCode, setSelectedLanguageCode] = useState<string>("kn-IN");
   
+  // Shared synchronized states across both tabs
   const [crop, setCrop] = useState("Hybrid Tomato");
   const [volume, setVolume] = useState("990");
   const [location, setLocation] = useState("Kolar Belt ➔ Bengaluru Terminal");
   const [radiusKm, setRadiusKm] = useState(12);
   const [farmersCount, setFarmersCount] = useState(3);
-  
   const [qualityGrade, setQualityGrade] = useState("Grade A (Export Index 95.4%)");
-  const [farmerPhone] = useState("+91 98450 21980");
 
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [isVideoAnalyzing, setIsVideoAnalyzing] = useState(false);
@@ -170,6 +176,9 @@ export default function Home() {
   const [chaosMode, setChaosMode] = useState(false);
   const [showProtocolPayload, setShowProtocolPayload] = useState(false);
   const [showToolDrawer, setShowToolDrawer] = useState(false);
+  const [showPitchModal, setShowPitchModal] = useState(false);
+  const [showIvrModal, setShowIvrModal] = useState(false);
+  const [showPattiModal, setShowPattiModal] = useState(false);
 
   const currentLang = PAN_INDIA_LANGUAGES.find(l => l.code === selectedLanguageCode) || PAN_INDIA_LANGUAGES[0];
 
@@ -182,6 +191,7 @@ export default function Home() {
     }
   }, [isPlayingAudio, isSoundboxPlaying, isVideoAnalyzing, videoDemoActive]);
 
+  // Synchronize inputs when language or crop changes
   const handleLanguageChange = (code: string) => {
     setSelectedLanguageCode(code);
     const langObj = PAN_INDIA_LANGUAGES.find(l => l.code === code);
@@ -211,6 +221,7 @@ export default function Home() {
     return voices.find(v => v.lang.toLowerCase().includes("in")) || null;
   };
 
+  // Bidirectional trigger: Voice in Oral Mode updates FPO inputs simultaneously
   const triggerInstantFieldDemo = (langCode: string) => {
     handleLanguageChange(langCode);
     const target = PAN_INDIA_LANGUAGES.find(l => l.code === langCode) || PAN_INDIA_LANGUAGES[0];
@@ -244,10 +255,11 @@ export default function Home() {
     setTimeout(() => {
       setIsVideoAnalyzing(false);
       setTranscriptText(target.sampleVideoSpeech);
+      // Synchronize exact input values across both tabs
       setCrop(target.defaultCrop);
       setVolume(target.defaultKg);
-      setQualityGrade(`Grade A (Multimodal Assay: 96.4% • ${target.label.split(" ")[0]})`);
-    }, 1200);
+      setQualityGrade(`Grade A (Assay: 96.4% • ${target.label.split(" ")[0]})`);
+    }, 1100);
   };
 
   const playSoundboxConfirmation = () => {
@@ -277,7 +289,7 @@ export default function Home() {
 
   const openWhatsAppDispatch = () => {
     if (!result) return;
-    const msg = `*KISANMESH ESCROW CONSIGNMENT*%0A*ID:* ${result.consignmentVoucher.voucherId}%0A*Crop:* ${crop}%0A*Batch:* ${volume} kg%0A*Net Benefit:* ₹${result.optimalMandi.netGainRupees.toLocaleString()}%0A*Storage:* ${result.consignmentVoucher.coldStorageHub}%0A*Status: ESCROW LOCKED*`;
+    const msg = `*KISANMESH ESCROW CONSIGNMENT*%0A*Token:* ${result.consignmentVoucher.voucherId}%0A*Commodity:* ${crop}%0A*Net Weight:* ${volume} kg%0A*Net Benefit:* ₹${result.optimalMandi.netGainRupees.toLocaleString()}%0A*APMC Permit:* ${result.regulatoryPass?.apmcExemptionPermit || 'KA-SEC8-VERIFIED'}%0A*Status: ESCROW LOCKED*`;
     window.open(`https://wa.me/?text=${msg}`, "_blank");
   };
 
@@ -325,12 +337,12 @@ export default function Home() {
     triggerInstantFieldDemo(selectedLanguageCode);
     setTimeout(() => {
       runArbitrageSentinel();
-    }, 1600);
+    }, 1500);
   };
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-16 print:bg-white print:text-black">
-      {/* Header with Resilience Status */}
+      {/* Universal Header with Synced Status */}
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-6 py-3.5 flex items-center justify-between sticky top-0 z-50 print:hidden">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-black">
@@ -338,33 +350,41 @@ export default function Home() {
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-              KisanMesh <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-mono">Production Master</span>
+              KisanMesh <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-mono">ONDC Agri-DPI Node</span>
             </h1>
             <p className="text-xs text-slate-400">
               {activePersona === "ORAL_FARMER" 
-                ? "Zero-Literacy Voice, Telephony & Soundbox Screen" 
-                : "Autonomous Supply Arbitrage, Tare Weighing & Logistics Engine"}
+                ? "Zero-Literacy Voice, Telephony & Physical Mandi Patti Mode" 
+                : "Autonomous Supply Arbitrage, Tare Weighing & Backhaul Logistics Engine"}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs">
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 font-mono text-[11px]">
-            <Wifi className="h-3 w-3 text-emerald-400" />
-            <span>Edge Queue Active (Online)</span>
+        <div className="flex items-center gap-2.5 text-xs">
+          {/* Real-time Bidirectional State Indicator */}
+          <div className="hidden lg:flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] font-mono text-emerald-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Live Sync: {crop} ({volume}kg)</span>
           </div>
 
+          <button
+            onClick={() => setShowIvrModal(true)}
+            className="hidden sm:flex px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-mono text-xs items-center gap-1.5 transition cursor-pointer"
+          >
+            <PhoneCall className="h-3.5 w-3.5 text-amber-400" />
+            <span>*99# IVR Mode</span>
+          </button>
+
+          <button
+            onClick={() => setShowPitchModal(true)}
+            className="px-2.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 font-mono text-xs flex items-center gap-1.5 transition cursor-pointer"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+            <span>System Spec</span>
+          </button>
+
+          {/* Persona Switcher */}
           <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 shadow-inner">
-            <button
-              onClick={() => setActivePersona("FPO_OPERATOR")}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                activePersona === "FPO_OPERATOR" 
-                  ? "bg-slate-800 text-emerald-400 font-bold border border-slate-700 shadow" 
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Building2 className="h-3.5 w-3.5" /> FPO Hub
-            </button>
             <button
               onClick={() => setActivePersona("ORAL_FARMER")}
               className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -375,23 +395,35 @@ export default function Home() {
             >
               <Ear className="h-3.5 w-3.5" /> Oral Mode
             </button>
+            <button
+              onClick={() => setActivePersona("FPO_OPERATOR")}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                activePersona === "FPO_OPERATOR" 
+                  ? "bg-slate-800 text-emerald-400 font-bold border border-slate-700 shadow" 
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Building2 className="h-3.5 w-3.5" /> FPO Hub
+            </button>
           </div>
 
           <button
             onClick={() => setChaosMode(!chaosMode)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition cursor-pointer ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full border transition cursor-pointer ${
               chaosMode 
                 ? "bg-rose-500/20 border-rose-500 text-rose-300 animate-pulse font-bold" 
                 : "bg-slate-800/80 hover:bg-slate-800 border-slate-700 text-slate-400"
             }`}
           >
             <Flame className="h-3.5 w-3.5 text-rose-400" />
-            <span>{chaosMode ? "Chaos Active" : "Inject Chaos"}</span>
+            <span>{chaosMode ? "Chaos Active" : "Chaos"}</span>
           </button>
         </div>
       </header>
 
-      {/* VIEW 1: DEDICATED ORAL MODE */}
+      {/* ========================================================================= */}
+      {/* VIEW 1: DEDICATED ORAL MODE (ZERO-LITERACY RURAL FARMER COCKPIT)          */}
+      {/* ========================================================================= */}
       {activePersona === "ORAL_FARMER" ? (
         <div className="max-w-4xl mx-auto p-6 space-y-6 mt-4 animate-in fade-in zoom-in-95 duration-300">
           <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-500/40 flex items-center justify-between">
@@ -400,18 +432,19 @@ export default function Home() {
                 <Ear className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-white">ರೈತರ ಧ್ವನಿ ಇಂಟರ್ಫೇಸ್ • Rural Voice & Soundbox</h2>
-                <p className="text-xs text-slate-400">Zero-reading interface. Tap your language card to listen and speak.</p>
+                <h2 className="text-base font-bold text-white">ರೈತರ ಧ್ವನಿ ಇಂಟರ್ಫೇಸ್ • Rural Voice & Physical Patti Mode</h2>
+                <p className="text-xs text-slate-400">Zero-reading interface. Tap your mother tongue card to listen, speak, and print your slip.</p>
               </div>
             </div>
             <button
               onClick={() => setActivePersona("FPO_OPERATOR")}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200 flex items-center gap-1 transition"
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200 flex items-center gap-1 transition cursor-pointer"
             >
-              Back to FPO Hub <ArrowRight className="h-3.5 w-3.5" />
+              Switch to FPO Hub <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
 
+          {/* 4 Big Regional Dialect Buttons */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {PAN_INDIA_LANGUAGES.map((l) => (
               <button
@@ -419,7 +452,7 @@ export default function Home() {
                 onClick={() => triggerInstantFieldDemo(l.code)}
                 className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
                   selectedLanguageCode === l.code
-                    ? "bg-emerald-500/20 border-emerald-500 shadow-lg shadow-emerald-500/10"
+                    ? "bg-emerald-500/20 border-emerald-500 shadow-lg shadow-emerald-500/10 scale-[1.02]"
                     : "bg-slate-900/90 hover:bg-slate-800/90 border-slate-800"
                 }`}
               >
@@ -430,16 +463,18 @@ export default function Home() {
             ))}
           </div>
 
+          {/* Large Voice Recording & Waveform Panel */}
           <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-2xl text-center space-y-5">
             <div className="space-y-2">
               <span className="text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold">
-                {currentLang.label} • {currentLang.defaultCrop}
+                {currentLang.label} • {crop} ({volume} kg)
               </span>
               <h3 className="text-lg font-bold text-white">
                 &ldquo;{transcriptText || currentLang.sampleVideoSpeech}&rdquo;
               </h3>
             </div>
 
+            {/* Audio Waveform */}
             <div className="h-16 flex items-center justify-center gap-2 p-3 bg-slate-950 rounded-2xl border border-slate-800/80">
               {liveAudioWave.map((h, i) => (
                 <span
@@ -450,6 +485,7 @@ export default function Home() {
               ))}
             </div>
 
+            {/* Action Buttons */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
               <button
                 onClick={() => triggerInstantFieldDemo(selectedLanguageCode)}
@@ -475,25 +511,37 @@ export default function Home() {
               </button>
             </div>
 
+            {/* Result Confirmation Slip with Mandi Patti Button */}
             {result && (
-              <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between text-left animate-in slide-in-from-bottom-2">
+              <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between text-left gap-3 animate-in slide-in-from-bottom-2">
                 <div>
                   <span className="text-xs font-mono text-emerald-400 block font-bold">ಆಡಿಯೋ ದೃಢೀಕರಣ • Spoken Confirmation</span>
                   <span className="text-sm font-bold text-white block mt-0.5">{currentLang.spokenRateMsg}</span>
+                  <span className="text-[11px] text-slate-400 font-mono">Consignment Token: #{result.consignmentVoucher.voucherId}</span>
                 </div>
-                <button
-                  onClick={playSoundboxConfirmation}
-                  className="px-3 py-2 bg-emerald-500 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5"
-                >
-                  <Volume2 className="h-4 w-4" /> Listen
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowPattiModal(true)}
+                    className="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow cursor-pointer"
+                  >
+                    <Receipt className="h-4 w-4" /> View Mandi Patti Slip
+                  </button>
+                  <button
+                    onClick={playSoundboxConfirmation}
+                    className="px-3 py-2 bg-emerald-500 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow cursor-pointer"
+                  >
+                    <Volume2 className="h-4 w-4" /> Replay Voice
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
       ) : (
 
-      /* VIEW 2: FULL ENTERPRISE FPO HUB COCKPIT */
+      /* ========================================================================= */
+      /* VIEW 2: FULL ENTERPRISE FPO HUB COCKPIT (SYNCHRONIZED WITH ORAL MODE)     */
+      /* ========================================================================= */
       <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 mt-2 print:m-0 print:p-0 print:block animate-in fade-in duration-300">
         <div className="lg:col-span-4 space-y-5 print:hidden">
           <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 to-slate-900 border border-emerald-500/40 shadow-xl space-y-3">
@@ -613,10 +661,14 @@ export default function Home() {
             )}
           </div>
 
+          {/* Synchronized Lot Geometry Controls */}
           <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-              <Sliders className="h-4 w-4 text-emerald-400" /> Lot Geometry Parameters
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                <Sliders className="h-4 w-4 text-emerald-400" /> Lot Geometry Parameters
+              </h2>
+              <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded">Synced with Voice</span>
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -625,7 +677,7 @@ export default function Home() {
                   type="text"
                   value={crop} 
                   onChange={(e) => setCrop(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-semibold"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-semibold focus:border-emerald-500 focus:outline-none"
                 />
               </div>
 
@@ -635,7 +687,7 @@ export default function Home() {
                   type="number"
                   value={volume}
                   onChange={(e) => setVolume(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:border-emerald-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -698,7 +750,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right Column */}
+        {/* Right Column: Execution Output */}
         <div className="lg:col-span-8 space-y-6 print:w-full">
           <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs font-mono print:hidden">
             <div className="flex items-center gap-1.5 text-slate-400">
@@ -759,7 +811,7 @@ export default function Home() {
             <div className="h-52 rounded-xl bg-slate-950 border border-slate-800/80 p-4 font-mono text-xs overflow-y-auto space-y-3">
               {!result && !loading && (
                 <div className="h-full flex items-center justify-center text-slate-500">
-                  Ready. Click [Run Full Autonomous Pipeline] to execute the complete workflow.
+                  Ready. Spoken lot &ldquo;{crop} ({volume}kg)&rdquo; is synchronized. Click [Run Full Autonomous Pipeline].
                 </div>
               )}
 
@@ -889,6 +941,12 @@ export default function Home() {
                     <p className="text-[11px] text-slate-400 mt-0.5 print:text-slate-600">Proportional freight allocation with backhaul subsidy pass-through</p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowPattiModal(true)}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center gap-1.5 hover:bg-amber-500/30 transition shadow-md print:hidden cursor-pointer"
+                    >
+                      <Receipt className="h-3.5 w-3.5" /> Mandi Patti
+                    </button>
                     <button
                       onClick={() => setUpiPayoutModal(true)}
                       className="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 hover:bg-emerald-400 transition shadow-md print:hidden cursor-pointer"
@@ -1037,6 +1095,138 @@ export default function Home() {
       </div>
       )}
 
+      {/* Feature Phone *99# USSD / IVR Simulator Modal */}
+      {showIvrModal && (
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-amber-500/40 rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span className="text-xs font-mono text-amber-400 font-bold flex items-center gap-1.5">
+                <PhoneCall className="h-4 w-4" /> Feature Phone Toll-Free IVR (*99#)
+              </span>
+              <button onClick={() => setShowIvrModal(false)} className="text-slate-400 hover:text-white text-xs cursor-pointer">✕</button>
+            </div>
+            
+            <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2 text-left text-xs font-mono">
+              <div className="text-amber-400 font-bold">KisanMesh Voice Gate</div>
+              <div className="text-slate-300">Dial: <span className="text-white font-bold">1800-419-MESH</span> or USSD <span className="text-white font-bold">*99*52#</span></div>
+              <div className="p-2 bg-slate-900 rounded text-[11px] text-slate-400 italic">
+                &ldquo;ನಮಸ್ಕಾರ ರಮೇಶ್. ನಿಮ್ಮ {Math.ceil(Number(volume)/22)} ಪೆಟ್ಟಿಗೆ {crop} ಸಂಗ್ರಹ ದೃಢಪಟ್ಟಿದೆ. 1 ಒತ್ತಿ ಮುಂದುವರಿಯಿರಿ.&rdquo;
+              </div>
+              <div className="text-emerald-400 font-bold text-[11px]">Keypad 1 Pressed: Confirmed for Bengaluru APMC</div>
+            </div>
+
+            <button
+              onClick={() => {
+                playSoundboxConfirmation();
+                setTimeout(() => setShowIvrModal(false), 2000);
+              }}
+              className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition cursor-pointer"
+            >
+              Simulate IVR Voice Callback
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Traditional Mandi Patti Thermal Receipt Modal */}
+      {showPattiModal && result && (
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-amber-50 text-slate-900 rounded-2xl max-w-sm w-full p-6 space-y-3 font-mono text-xs shadow-2xl border border-amber-300">
+            <div className="text-center border-b-2 border-dashed border-slate-800 pb-2">
+              <h3 className="text-sm font-black uppercase tracking-wider">APMC KISAN PATTI (ರಶೀದಿ)</h3>
+              <p className="text-[10px] text-slate-600">Digital Tare Weighbridge & Escrow Mandate</p>
+              <p className="text-[10px] font-bold">VOUCHER: #{result.consignmentVoucher.voucherId}</p>
+            </div>
+
+            <div className="space-y-1 text-[11px]">
+              <div className="flex justify-between"><span className="text-slate-600">Farmer:</span><span className="font-bold">Ramesh Gowda</span></div>
+              <div className="flex justify-between"><span className="text-slate-600">Commodity:</span><span className="font-bold">{crop} (Grade A)</span></div>
+              <div className="flex justify-between"><span className="text-slate-600">Gross Weight:</span><span>{result.weighbridgeAudit?.grossWeightKg || 1080} kg</span></div>
+              <div className="flex justify-between"><span className="text-slate-600">Plastic Crate Tare:</span><span className="text-rose-700">-{result.weighbridgeAudit?.tareWeightKg || 90} kg</span></div>
+              <div className="flex justify-between border-t border-slate-400 pt-1"><span className="font-bold">Net Billed Crop:</span><span className="font-bold">{volume} kg</span></div>
+              <div className="flex justify-between"><span className="text-slate-600">Locked Price:</span><span className="font-bold">₹{result.optimalMandi.projectedPricePerKg}/kg</span></div>
+              <div className="flex justify-between"><span className="text-slate-600">Pooled Freight:</span><span>-₹{result.farmerCluster[0]?.pooledFreightCost || 1627}</span></div>
+              <div className="flex justify-between border-t-2 border-dashed border-slate-800 pt-1 text-xs">
+                <span className="font-black">T+0 Advance (60%):</span>
+                <span className="font-black text-emerald-800">₹{Math.round(result.optimalMandi.netGainRupees * 0.6).toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div className="text-center border-t border-dashed border-slate-400 pt-2 space-y-1">
+              <p className="text-[9px] text-slate-600">Verified under APMC Section 8 Transit Rules</p>
+              <button 
+                onClick={handlePrintVoucher}
+                className="w-full py-2 bg-slate-900 text-amber-50 font-bold rounded-lg text-xs hover:bg-slate-800 cursor-pointer"
+              >
+                Print Thermal Patti (Ctrl + P)
+              </button>
+              <button 
+                onClick={() => setShowPattiModal(false)}
+                className="text-[10px] text-slate-500 hover:text-slate-800 block mx-auto pt-1 cursor-pointer"
+              >
+                Close Receipt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Built-in System Spec Modal */}
+      {showPitchModal && (
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-2xl w-full p-6 space-y-5 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm font-mono">
+                <Sparkles className="h-4 w-4" />
+                <span>KisanMesh Architecture & Protocol Specifications</span>
+              </div>
+              <button 
+                onClick={() => setShowPitchModal(false)}
+                className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded bg-slate-800 cursor-pointer"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                <span className="text-emerald-400 font-bold font-mono">1. THE CRISIS (KOLAR-BLR)</span>
+                <p className="text-slate-300">
+                  Local mandi gluts crash spot rates to ₹3.80/kg while urban markets pay ₹22/kg. Solo freight of ₹3,580 on sub-tonne yields destroys arbitrage margins.
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                <span className="text-cyan-400 font-bold font-mono">2. AGENTIC PROTOCOL</span>
+                <p className="text-slate-300">
+                  Sentinel predicts rot velocity via $Q_{10}$ math. Cluster pools 3-8 micro-lots. Auctioneer runs 3-turn Dutch reverse auctions for off-peak storage.
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                <span className="text-amber-400 font-bold font-mono">3. PHYSICAL LOGISTICS</span>
+                <p className="text-slate-300">
+                  Solves empty return trips via DAP backhauls (-₹1,450), prevents in-transit bruising via 3-Tier Stacking, and deducts 2.0 kg empty crate tare.
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+                <span className="text-rose-400 font-bold font-mono">4. RURAL DPI & ADOPTION</span>
+                <p className="text-slate-300">
+                  Zero-reading Oral Mode extracts dialect units, APMC Section 8 clearance tokens protect drivers, and UPI Soundbox confirms instant 60% T+0 payouts.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-indigo-950/30 border border-indigo-500/20 text-[11px] font-mono text-indigo-300 flex items-center justify-between">
+              <span>Bit N Build 2026 • Agricultural Micro-Economies Track</span>
+              <span className="text-emerald-400 font-bold">READY TO DEPLOY</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ONDC Instant UPI Settlement Modal */}
       {upiPayoutModal && result && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95">
