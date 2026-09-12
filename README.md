@@ -36,7 +36,7 @@ Because **86.2% of Indian farmers are Small and Marginal Farmers (SMFs)** holdin
 Monitors real-time mandi inflow velocities and Agmarknet arrival rates. Integrates OpenMeteo thermal telemetry to calculate non-linear perishable decay curves ($Q_{10}$ respiration coefficient) to forecast price collapses up to 48 hours in advance.
 
 ### 2. Cluster Engine (Spatial Aggregation & Backhaul Logistics)
-Consolidates fragmented micro-lots within a localized radius into unified commercial payloads (2.6+ tonnes). Matches returning trucks with subsidized return-trip cargo (IFFCO DAP fertilizer / empty crates) to reduce net freight expenses by over 60%.
+Consolidates fragmented smallholder yields (e.g., Ramesh, Suresh, Anand) within a localized radius into unified commercial payloads (2.6+ tonnes). Matches returning trucks with subsidized return-trip cargo (IFFCO DAP fertilizer / empty crates) to reduce net freight expenses by over 60%.
 
 ### 3. Auctioneer Agent (Autonomous Market Making)
 Conducts 3-turn programmatic reverse bargaining with destination cold-storage facilities, locking off-peak holding fees (e.g., reducing quotes from ₹12.60 to ₹9.10/crate) before perishable commodities degrade.
@@ -48,7 +48,7 @@ Deducts empty crate tare weight (2.0 kg/crate) so farmers only pay freight on ne
 
 ## 🚀 Key Technical Highlights
 
-* **Dual-View Architecture:** Seamlessly switches between the **FPO Hub** (enterprise logistics & analytical telemetry) and **Oral Mode** (zero-literacy, voice-first farmer interface).
+* **Dual-View Architecture:** Seamlessly switches between the FPO Hub (enterprise logistics & analytical telemetry) and Oral Mode (zero-literacy, voice-first farmer interface).
 * **Multilingual Oral Ingest:** Supports Kannada (`kn-IN`), Hindi (`hi-IN`), Marathi (`mr-IN`), and Telugu (`te-IN`) with native dialect phonetic extraction and unit normalization (crates, *petti*, *katta*, *bora* $\rightarrow$ kg).
 * **Hardware-Simulated Feedback:** Integrates audible UPI Soundbox chimes and toll-free keypad IVR call simulations (`*99#`).
 * **Open Protocol Conformance:** Strictly adheres to Beckn Core v1.2 specifications (`/search`, `/select`, `/init`, `/confirm`) across ONDC logistics and financial settlement layers.
@@ -73,15 +73,6 @@ npm run dev
 Open http://localhost:3000 in your browser.
 
 
-Save with **Ctrl + S** and close Notepad.
+Save the file (**Ctrl + S**) and close Notepad.
 
 ---
-
-### Step 2: Push the Updated README
-
-Run in Command Prompt:
-```cmd
-cd %USERPROFILE%\Desktop\kisanmesh
-git add README.md
-git commit -m "docs: clean up local development instructions and formatting"
-git push origin main
