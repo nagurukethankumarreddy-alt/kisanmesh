@@ -60,7 +60,7 @@ Deducts empty crate tare weight (2.0 kg/crate) so farmers only pay freight on ne
 
 ```bash
 # Clone the repository
-git clone [https://github.com/kethan/kisanmesh.git](https://github.com/kethan/kisanmesh.git)
+git clone https://github.com/kethan/kisanmesh.git
 
 # Navigate to project directory
 cd kisanmesh
