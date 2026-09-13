@@ -3,6 +3,7 @@
 > **Bit N Build 2026 (GDG RVCE Karnataka Round)**  
 > **Track:** Agricultural Micro-Economies & Supply Arbitrage  
 > **Theme:** Agentic AI for Good  
+>*Live Demo Video (3 Min):** [Watch Prototype Walkthrough] : ( https://drive.google.com/file/d/1KC7voWfaIfskpkKloJQtU3f8lV0WSC7T/view?usp=sharing )
 > **Deployment:** Production Ready (Next.js 15, TypeScript, Gemini 2.5 Flash, Bhashini Dialect Engine, ONDC Beckn Protocol v1.2)
 
 ---
